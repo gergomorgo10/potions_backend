@@ -1,12 +1,27 @@
 const express = require("express");
-const { eq } = require("drizzle-orm");
+const { eq, like } = require("drizzle-orm");
 const db = require("../db/db");
 const { potions } = require("../db/schema");
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const potion = await db.select().from(potions);
+    const  {name, effect} = req.query;
+    let isDangerous = req.query.isDangerous;
+    // if(isDangerous === "true"){
+    //     isDangerous = true
+    // }
+    // else {
+    //     isDangerous = false
+    // }
+
+    if(!name || !effect || !isDangerous){
+        const allpoints = await db.select().from(potions);
+        return res.status(200).json(allpoints)
+    }
+    isDangerous = isDangerous === "true"
+
+    (await db.select().from(potions)).where(and(like(potions.name, `%${name}%`), like(potions.effect, `%${effect}%`), eq(isDangerous, potions.isDangerous)))
     return res.status(200).json(potion);
   } 
   catch (error){
@@ -114,14 +129,15 @@ router.put("/:id", async (req, res) => {
             return res.status(404).json({
                 message: "nemtalalt effect :C",
             })
-        }
+        }0
+
         if(isDangerous === null){
             return res.status(404).json({
                 message: "kene bool erter >:x",
             })
         }
 
-        await db.update(potions).set({name, effect, isDangerous}).where(eq(potion.id, req.params.id))
+        await db.update(potions).set({name, effect, isDangerous}).where(eq(potions.id, req.params.id))
         return res.status(200).json({
             message: "sikeres, update!!!!!"
         })
